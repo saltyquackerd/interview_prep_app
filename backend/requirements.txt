@@ -1,0 +1,4 @@
+fastapi
+uvicorn
+openai-whisper
+python-multipart   # needed for file uploads
