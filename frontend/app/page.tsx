@@ -36,7 +36,28 @@ export default function Home() {
     setAudioURL(null);
     setAudioBlob(null);
     setLoading(true);
-    // Optionally, upload resume to backend here if needed
+    // Upload resume to backend first
+    if (resume) {
+      const formData = new FormData();
+      formData.append("file", resume);
+      try {
+        const uploadRes = await fetch("http://localhost:8000/upload_resume", {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadRes.ok) {
+          const err = await uploadRes.json();
+          alert("Resume upload failed: " + (err.detail || uploadRes.statusText));
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        alert("Resume upload failed: " + e);
+        setLoading(false);
+        return;
+      }
+    }
+    // Now start the interview
     const res = await fetch("http://localhost:8000/chat_interview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

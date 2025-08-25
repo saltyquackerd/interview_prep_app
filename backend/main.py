@@ -1,10 +1,14 @@
 
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from whisper_utils import transcribe_audio_file
 from llama3_utils import get_llama3_question
 from rag_utils import process_resume, get_relevant_chunks
+import logging
 
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("main")
 app = FastAPI()
 
 
@@ -45,8 +49,14 @@ from typing import List, Dict, Optional
 
 @app.post("/upload_resume")
 async def upload_resume(file: UploadFile = File(...)):
-    process_resume(await file.read(), file.filename)
-    return {"message": "Resume uploaded, processed, and indexed in ChromaDB."}
+    logger.info("[API] /upload_resume called with file: %s", file.filename)
+    try:
+        process_resume(await file.read(), file.filename)
+        logger.info("[API] process_resume completed successfully.")
+        return {"message": "Resume uploaded, processed, and indexed in ChromaDB."}
+    except Exception as e:
+        logger.exception("[API] Error in /upload_resume: %s", str(e))
+        raise HTTPException(status_code=500, detail=f"Resume processing failed: {str(e)}")
 
 @app.post("/chat_interview")
 def chat_interview(
