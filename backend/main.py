@@ -2,6 +2,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from whisper_utils import transcribe_audio_file
+from interviewee_analysis_utils import analyze_professionalism
 from llama3_utils import get_llama3_question
 from rag_utils import process_resume, get_relevant_chunks
 import logging
@@ -111,5 +112,7 @@ def get_questions(role: str = Query(..., description="Role to get questions for"
 @app.post("/transcribe")
 async def transcribe_audio(file: UploadFile = File(...)):
     text = transcribe_audio_file(await file.read())
+    analysis = analyze_professionalism(text)
     print(text)
-    return {"text": text}
+    print(analysis)
+    return {"text": text, "analysis": analysis}

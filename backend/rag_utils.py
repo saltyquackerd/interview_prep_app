@@ -45,8 +45,12 @@ def process_resume(file, filename):
 	if EMBEDDING_MODEL is None:
 		EMBEDDING_MODEL = SentenceTransformer("all-MiniLM-L6-v2")
 
+
 	client = chromadb.Client(Settings(anonymized_telemetry=False))
-	CHROMA_COLLECTION = client.create_collection("resume_chunks")
+	try:
+		CHROMA_COLLECTION = client.create_collection("resume_chunks")
+	except Exception:
+		CHROMA_COLLECTION = client.get_collection("resume_chunks")
 
 	embeddings = EMBEDDING_MODEL.encode(chunks).tolist()
 	ids = [f"chunk_{i}" for i in range(len(chunks))]

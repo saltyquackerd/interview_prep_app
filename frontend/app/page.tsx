@@ -17,6 +17,8 @@ export default function Home() {
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => { setHasMounted(true); }, []);
   const [role, setRole] = useState(ROLES[0].value);
+  const [customRole, setCustomRole] = useState("");
+  const [interviewStyle, setInterviewStyle] = useState("");
   const [started, setStarted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [resume, setResume] = useState<File | null>(null);
@@ -30,6 +32,8 @@ export default function Home() {
 
   // Start interview
   const startInterview = async () => {
+    // Use custom role if provided
+    const roleToUse = customRole.trim() ? customRole.trim() : role;
     setStarted(true);
     setMessages([]);
     setTranscript("");
@@ -37,7 +41,7 @@ export default function Home() {
     setAudioBlob(null);
     setLoading(true);
     // Upload resume to backend first
-    if (resume) {
+  if (resume) {
       const formData = new FormData();
       formData.append("file", resume);
       try {
@@ -61,7 +65,11 @@ export default function Home() {
     const res = await fetch("http://localhost:8000/chat_interview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role, history: [] }),
+      body: JSON.stringify({
+        role: roleToUse,
+        history: [],
+        interview_style: interviewStyle.trim()
+      }),
     });
     const data = await res.json();
     setMessages([{ sender: "bot", text: data.reply }]);
@@ -70,6 +78,7 @@ export default function Home() {
 
   // Send user answer (audio transcript only)
   const sendAnswer = async (answer: string) => {
+    const roleToUse = customRole.trim() ? customRole.trim() : role;
     const newHistory: Message[] = [...messages, { sender: "user", text: answer }];
     setMessages(newHistory);
     setTranscript("");
@@ -80,8 +89,9 @@ export default function Home() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        role,
+        role: roleToUse,
         history: newHistory.map(m => ({ role: m.sender, text: m.text })),
+        interview_style: interviewStyle.trim()
       }),
     });
     const data = await res.json();
@@ -145,6 +155,28 @@ export default function Home() {
               <option key={r.value} value={r.value}>{r.label}</option>
             ))}
           </select>
+          <div className="mt-2">
+            <label className="block mb-2 font-semibold">Or type a custom role</label>
+            <input
+              type="text"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-black"
+              placeholder="e.g. Frontend Developer, AI Researcher, etc."
+              value={customRole}
+              onChange={e => setCustomRole(e.target.value)}
+              disabled={started}
+            />
+          </div>
+          <div className="mt-4">
+            <label className="block mb-2 font-semibold">Interview Style / Instructions (optional)</label>
+            <textarea
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-black"
+              placeholder="e.g. Focus on system design, ask behavioral questions, etc."
+              value={interviewStyle}
+              onChange={e => setInterviewStyle(e.target.value)}
+              disabled={started}
+              rows={2}
+            />
+          </div>
           <div className="mt-4">
             <label className="block mb-2 font-semibold">Upload Resume (PDF, DOCX, etc.)</label>
             <input
